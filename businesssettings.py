@@ -3,30 +3,45 @@ import datetime
 import traceback
 
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+
 
 # --------------------------------------------
 # CONFIG
 # --------------------------------------------
-CHROME_DRIVER_PATH = r"C:\Users\bhavy\Downloads\chromedriver-win64\chromedriver-win64\chromedriver.exe"
-
 LOGIN_EMAIL = "user5684@mail.com"
 LOGIN_PASSWORD = "12345678"
 
-options = Options()
-options.add_argument("--start-maximized")
-options.add_argument("--disable-blink-features=AutomationControlled")
-
-service = Service(CHROME_DRIVER_PATH)
-driver = webdriver.Chrome(service=service, options=options)
-wait = WebDriverWait(driver, 20)
-
 def log(msg):
     print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}")
+
+
+# ----------------------------------------------------------
+# BROWSER SETUP FOR GITHUB ACTIONS (HEADLESS)
+# ----------------------------------------------------------
+def create_driver():
+    chrome_options = Options()
+    chrome_options.add_argument("--headless=new")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--disable-gpu")
+
+    driver = webdriver.Chrome(
+        ChromeDriverManager().install(),
+        options=chrome_options
+    )
+
+    return driver
+
+
+driver = create_driver()
+wait = WebDriverWait(driver, 20)
+
 
 # ----------------------------------------------------------
 # LOGIN FUNCTION
@@ -42,6 +57,7 @@ def login_to_system():
 
     wait.until(EC.url_contains("/admin/dashboard"))
     log("✅ Logged in successfully!")
+
 
 # ----------------------------------------------------------
 # OPEN BUSINESS SETTINGS PAGE
@@ -66,8 +82,9 @@ def open_business_settings():
     wait.until(EC.visibility_of_element_located((By.XPATH, "//h4[text()='Business Details']")))
     log("✅ Business settings page loaded!")
 
+
 # ----------------------------------------------------------
-# EDIT BUSINESS SETTINGS — FULL FIXED VERSION
+# EDIT BUSINESS SETTINGS (FULL FIX)
 # ----------------------------------------------------------
 def edit_business_settings():
 
@@ -96,7 +113,6 @@ def edit_business_settings():
         (By.XPATH, "//span[@class='select2-selection select2-selection--single']")
     ))
 
-    # Real mouse events (Select2 fix)
     driver.execute_script("""
         arguments[0].dispatchEvent(new MouseEvent('mousedown', {bubbles:true}));
     """, select2_box)
@@ -126,7 +142,7 @@ def edit_business_settings():
     Select(driver.find_element(By.NAME, "city")).select_by_visible_text("Mumbai")
 
     # -------------------------------
-    # ENABLE TAXES BEFORE GST
+    # ENABLE TAXES TO ACTIVATE GST FIELDS
     # -------------------------------
     log("🟢 Enabling Taxes...")
 
@@ -141,21 +157,21 @@ def edit_business_settings():
     time.sleep(1)
 
     # -------------------------------
-    # UPLOAD LOGO BEFORE GST
+    # UPLOAD LOGO
     # -------------------------------
     log("🖼 Uploading Logo...")
     logo = driver.find_element(By.ID, "brand")
     driver.execute_script("arguments[0].scrollIntoView({block:'center'});", logo)
-    logo.send_keys(r"C:\Users\bhavy\Pictures\logo.png")
+    logo.send_keys("logo.jpeg")    # Must be inside repository
     time.sleep(1)
 
     # -------------------------------
-    # UPLOAD PROFILE BEFORE GST
+    # UPLOAD PROFILE
     # -------------------------------
     log("🖼 Uploading Profile Photo...")
     profile = driver.find_element(By.ID, "profile")
     driver.execute_script("arguments[0].scrollIntoView({block:'center'});", profile)
-    profile.send_keys(r"C:\Users\bhavy\Pictures\profile.jpg")
+    profile.send_keys("profile.jpeg")   # Must be inside repository
     time.sleep(1)
 
     # -------------------------------
@@ -185,6 +201,7 @@ def edit_business_settings():
 
     time.sleep(2)
     log("🎉 Business settings updated successfully!")
+
 
 # ----------------------------------------------------------
 # RUN SCRIPT
