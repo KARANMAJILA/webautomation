@@ -7,8 +7,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-
 
 # --------------------------------------------
 # CONFIG
@@ -19,29 +19,26 @@ LOGIN_PASSWORD = "12345678"
 def log(msg):
     print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}")
 
-
 # ----------------------------------------------------------
-# BROWSER SETUP FOR GITHUB ACTIONS (HEADLESS)
+# BROWSER SETUP FOR GITHUB ACTIONS (HEADLESS FIX)
 # ----------------------------------------------------------
 def create_driver():
     chrome_options = Options()
     chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 
-    driver = webdriver.Chrome(
-        ChromeDriverManager().install(),
-        options=chrome_options
-    )
+    # FIX: Correct webdriver manager installation
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=chrome_options)
 
     return driver
 
-
 driver = create_driver()
 wait = WebDriverWait(driver, 20)
-
 
 # ----------------------------------------------------------
 # LOGIN FUNCTION
@@ -57,7 +54,6 @@ def login_to_system():
 
     wait.until(EC.url_contains("/admin/dashboard"))
     log("✅ Logged in successfully!")
-
 
 # ----------------------------------------------------------
 # OPEN BUSINESS SETTINGS PAGE
@@ -82,9 +78,8 @@ def open_business_settings():
     wait.until(EC.visibility_of_element_located((By.XPATH, "//h4[text()='Business Details']")))
     log("✅ Business settings page loaded!")
 
-
 # ----------------------------------------------------------
-# EDIT BUSINESS SETTINGS (FULL FIX)
+# EDIT BUSINESS SETTINGS
 # ----------------------------------------------------------
 def edit_business_settings():
 
@@ -135,14 +130,13 @@ def edit_business_settings():
     # -------------------------------
     log("🌏 Selecting State Maharashtra...")
     Select(driver.find_element(By.NAME, "state")).select_by_visible_text("Maharashtra")
-
     time.sleep(0.5)
 
     log("🏙 Selecting City Mumbai...")
     Select(driver.find_element(By.NAME, "city")).select_by_visible_text("Mumbai")
 
     # -------------------------------
-    # ENABLE TAXES TO ACTIVATE GST FIELDS
+    # ENABLE TAXES
     # -------------------------------
     log("🟢 Enabling Taxes...")
 
@@ -153,7 +147,6 @@ def edit_business_settings():
     driver.execute_script("arguments[0].scrollIntoView({block:'center'});", gst_toggle)
     time.sleep(0.5)
     driver.execute_script("arguments[0].click();", gst_toggle)
-
     time.sleep(1)
 
     # -------------------------------
@@ -162,7 +155,7 @@ def edit_business_settings():
     log("🖼 Uploading Logo...")
     logo = driver.find_element(By.ID, "brand")
     driver.execute_script("arguments[0].scrollIntoView({block:'center'});", logo)
-    logo.send_keys("logo.jpeg")    # Must be inside repository
+    logo.send_keys("logo.jpeg")  # must be inside repo
     time.sleep(1)
 
     # -------------------------------
@@ -171,11 +164,11 @@ def edit_business_settings():
     log("🖼 Uploading Profile Photo...")
     profile = driver.find_element(By.ID, "profile")
     driver.execute_script("arguments[0].scrollIntoView({block:'center'});", profile)
-    profile.send_keys("profile.jpeg")   # Must be inside repository
+    profile.send_keys("profile.jpeg")  # must be inside repo
     time.sleep(1)
 
     # -------------------------------
-    # NOW GST FIELDS ARE VISIBLE
+    # UPDATE GST FIELDS
     # -------------------------------
     log("📊 Updating GST...")
 
@@ -192,7 +185,7 @@ def edit_business_settings():
     gst_num.send_keys("123456789012345")
 
     # -------------------------------
-    # SAVE SETTINGS
+    # SAVE
     # -------------------------------
     log("📝 Clicking Update Profile...")
     update_btn = driver.find_element(By.XPATH, "//button[contains(text(),'Update Profile')]")
@@ -201,7 +194,6 @@ def edit_business_settings():
 
     time.sleep(2)
     log("🎉 Business settings updated successfully!")
-
 
 # ----------------------------------------------------------
 # RUN SCRIPT
